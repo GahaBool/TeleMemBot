@@ -1,3 +1,4 @@
+import os
 from telethon import TelegramClient, events
 from mysql.connector import connect, Error, errorcode
 from MySQL_Query import create_table, add_new_mem
@@ -33,7 +34,10 @@ api_hash = config["API_HASH"]
 
 client = TelegramClient(bot, api_id, api_hash)
 
-channel_id = 1002096895063
+channel_id = 1001541543072
+
+SAVE_FOLDER = '\\Project_Python\\TelegramMem\\memes'
+
 # Обработчик новых сообщений
 @client.on(events.NewMessage(chats=channel_id))
 async def handler(event):
@@ -42,13 +46,18 @@ async def handler(event):
 
     # Проверяем, есть ли у сообщения медиа в виде фото
     if event.message.photo:
-        # Скачиваем медиа-файл асинхронно в файл
-        img = await event.message.download_media(file=bytes)
-        # Получаем имя файла для сохранения
+        # Даем уникальное имя для изображения на основании его ID в Telegram
         img_name = f"{event.message.photo.id}.jpg"
+        # Путь, по которому будет сохранено изображение
+        img_path = os.path.join(SAVE_FOLDER, img_name)
 
-        create_table(connection)#Создание таблицы MeSQL или проверка была ли она создана ранее
-        add_new_mem(connection, img, img_name, message_text)#Добавление новой записи в MySQL
+        # Скачиваем медиа-файл асинхронно и сохраняем на диск
+        await event.message.download_media(file=img_path)
+
+        # Вызываем функцию для создания таблицы в MySQL, если она еще не создана
+        create_table(connection)
+        # Добавляем новую запись в MySQL с путем до картинки, названием и текстом
+        add_new_mem(connection, img_path, img_name, message_text)
 
         print("Был опублекован новый пост!")#Стандартное термининальное оповищение.
 
