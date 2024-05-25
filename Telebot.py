@@ -23,7 +23,6 @@ dp.include_router(user_group_router)
 
 async def telebot():
     await bot.delete_webhook(drop_pending_updates=True)
-    #await bot.delete_my_commands(scope=types.BotCommandScopeAllPrivateChats()) #Команда которая удаляет кнопки на клавиатуре.
     await dp.start_polling(bot)
 
 
