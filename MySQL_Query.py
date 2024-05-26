@@ -1,21 +1,41 @@
 from mysql.connector import connect, Error, errorcode
-from PIL import Image
 
 #Основная работа с бд и мемами
 #================================================================
+def create_databases(connection):
+    cursor = connection.cursor()
+    databeses = """CREATE DATABASE IF NOT EXISTS membot;"""
+    try:
+        cursor.execute(databeses)
+    except Error as err:
+        print(f"The error '{err}' occurred")
+
 def create_table(connection):
     cursor = connection.cursor()
     table = """CREATE TABLE IF NOT EXISTS MEMES (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    file_path VARCHAR(255),
-    image_name VARCHAR(255),
-    format VARCHAR(255),
-    description TEXT
-);"""
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            group_id INT,
+            file_path TEXT,
+            image_name VARCHAR(255),
+            format VARCHAR(255),
+            description TEXT
+        );"""
     try:
         cursor.execute(table)
     except Error as err:
         print(f"The error '{err}' occurred")
+
+
+def delete_row(connection):
+    cursor = connection.cursor()
+    delete_query = """
+        DELETE FROM MEMES
+        WHERE TRIM(description) = '' AND format = 'group';
+        """
+    cursor.execute(delete_query)
+    deleted_rows = cursor.rowcount  # Количество удаленных строк
+    connection.commit()  # Необходимо подтвердить изменения
+    cursor.close()
 
 
 def add_new_mem(connection, imag, image_name, format, text):
@@ -46,16 +66,20 @@ def show_image_from_db(connection, img_int):
     except Error as err:
         print("Ошибка при подключении к базе данных: ", err)
 
-def last_id(connection):
+
+def get_random_row_id(connection):
     try:
         cursor = connection.cursor()
-        query_id = """SELECT MAX(id) FROM membot.memes;"""
-        cursor.execute(query_id)
-        id_image = cursor.fetchone()[0]
+        query = "SELECT id FROM memes ORDER BY RAND() LIMIT 1;"
+        cursor.execute(query)
 
-        return id_image
+        # Получаем одну запись
+        result = cursor.fetchone()
+        cursor.close()
 
+        # Возвращаем полученный id или None, если запись не найдена
+        return result[0] if result else None
     except Error as e:
-        print(f"Ошибка при подключении к MySQL: {e}")
+        print(f"Error: {e}")
         return None
 

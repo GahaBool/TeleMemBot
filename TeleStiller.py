@@ -2,7 +2,7 @@ import os
 import re
 from telethon import TelegramClient, events
 from mysql.connector import connect, Error, errorcode
-from MySQL_Query import create_table, add_new_mem
+from MySQL_Query import create_table, add_new_mem, create_databases, delete_row
 from dotenv import dotenv_values
 
 #Создал файл специально, что бы можно было работать с личными данными.
@@ -35,9 +35,9 @@ api_hash = config["API_HASH"]
 
 client = TelegramClient(bot, api_id, api_hash)
 
-channel_id = [100135795889, 1001009232144, 1001123683328, 1001541543072, 1001321922060, 1001292925703, 1002096895063, 1001306121936, 1001592724979, 1001405137531,1001096054832, 1001064421066, 1001256080372] #тетст:1002096895063   нетест:1001541543072 ККХП:1002085827667  [1001009232144, 1001541543072, 1001321922060, 1001396952381, 1002083716691, 1001357958891, 1001123683328, 1001045540194]
+channel_id = [1002096895063] #[100135795889, 1001009232144, 1001123683328, 1001541543072, 1001321922060, 1001292925703, 1001306121936, 1001592724979, 1001405137531,1001096054832, 1001064421066, 1001256080372] #тетст:1002096895063   нетест:1001541543072 ККХП:1002085827667  [1001009232144, 1001541543072, 1001321922060, 1001396952381, 1002083716691, 1001357958891, 1001123683328, 1001045540194]
 
-SAVE_FOLDER = '\\Project_Python\\TelegramMem\\memes'
+SAVE_FOLDER = '\\Python_project\\memes'
 
 # Обработчик новых сообщений
 @client.on(events.NewMessage(chats=channel_id))
@@ -59,7 +59,8 @@ async def handler(event):
         img_path = os.path.join(SAVE_FOLDER, img_name)
         # Скачиваем медиа-файл асинхронно и сохраняем на диск
         await event.message.download_media(file=img_path)
-        # Вызываем функцию для создания таблицы для фото в MySQL, если она еще не создана
+        # Вызываем функцию для создания таблицы\БД для фото в MySQL, если она еще не создана
+        create_databases(connection)
         create_table(connection)
         # Добавляем новую запись в MySQL с путем до картинки, названием и текстом
         add_new_mem(connection, img_path, img_name, format, message_text)
@@ -73,7 +74,8 @@ async def handler(event):
         format = 'gif'
         # Скачиваем асинхронно и сохраняем на диск
         await event.message.download_media(file=gif_path)
-        # Вызываем функцию для создания таблицы для фото в MySQL, если она еще не создана
+        # Вызываем функцию для создания таблицы\БД для фото в MySQL, если она еще не создана
+        create_databases(connection)
         create_table(connection)
         # Добавляем новую запись в MySQL с путем до картинки, названием и текстом
         add_new_mem(connection, gif_path, gif_name, format, message_text)
@@ -87,11 +89,13 @@ async def handler(event):
         video_path = os.path.join(SAVE_FOLDER, video_name)
         # Скачиваем асинхронно и сохраняем на диск
         await event.message.download_media(file=video_path)
-        # Вызываем функцию для создания таблицы для фото в MySQL, если она еще не создана
+        # Вызываем функцию для создания таблицы\БД для фото в MySQL, если она еще не создана
+        create_databases(connection)
         create_table(connection)
         # Добавляем новую запись в MySQL с путем до картинки, названием и текстом
         add_new_mem(connection, video_path, video_name, format, message_text)
         print(f"Видео сохранено: {video_path}")
+
 
     else:
         print("Неопознная ошибка")
