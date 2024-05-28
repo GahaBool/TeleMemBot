@@ -2,7 +2,7 @@ from aiogram import F, types, Router
 from aiogram.filters import Command, or_f
 from mysql.connector import connect, Error, errorcode
 
-from MySQL_Query import show_image_from_db, get_random_row_id
+from MySQL_Query import show_image_from_db, get_random_row_id, show_media_from_db
 from dotenv import dotenv_values
 import random
 
@@ -42,32 +42,29 @@ async def start(message: types.Message):
 async def random_mem(message: types.Message):
 
     number = get_random_row_id(connection)
-    file_path, format, description = show_image_from_db(connection, number)
+    group_id, file_path, format, description = show_image_from_db(connection, number)
+
 
     if format == "group":
-        media_files = file_path.split(',')  # Пути к файлам
+
+        media_files_paths = show_media_from_db(connection, group_id)
+
         media_group = []
 
-        # Описание применяется только к первому элементу группы, другие элементы не получают описание
-        first_element = True
+        text = ''
 
-        for file_path in media_files:
+        for file_paths, file_description in media_files_paths:
             if file_path.endswith('.mp4'):  # Для видеофайлов
-                media = types.InputMediaPhoto(media=types.FSInputFile(file_path))
+                media = types.InputMediaPhoto(media=types.FSInputFile(file_paths), caption=file_description)
             else:  # Для фотографий (предполагается, что все остальное - фотографии)
-                media = types.InputMediaPhoto(media=types.FSInputFile(file_path))
-
-            # Добавляем описание только к первому элементу
-            if first_element:
-                media.caption = description
-                first_element = False
+                media = types.InputMediaPhoto(media=types.FSInputFile(file_paths), caption=file_description)
 
             media_group.append(media)
+
 
         await message.answer_media_group(media=media_group)
 
     elif format == "video":
-        print("Видео!")
         await message.answer_video(video=types.FSInputFile(path=file_path), caption=description)
     elif format == "gif":
         await message.answer_animation(gif=types.FSInputFile(path=file_path), caption=description)

@@ -2,7 +2,7 @@ import os
 import re
 from telethon import TelegramClient, events
 from mysql.connector import connect, Error, errorcode
-from MySQL_Query import create_table, add_new_mem, create_databases, delete_row
+from MySQL_Query import create_table, add_new_mem, create_databases, add_new_mem_group, show_media_from_db
 from dotenv import dotenv_values
 
 #Создал файл специально, что бы можно было работать с личными данными.
@@ -50,8 +50,32 @@ async def handler(event):
         print("Сообщение с ссылкой, не проходит по параметрам!")
         return  # Пропускаем обработку и ждём следующего события
 
+    if event.message.grouped_id:
+        group_id = event.message.grouped_id
+        # Формируем уникальное имя файла на основе его ID, в зависимости от его типа (фото или видео)
+        if event.message.photo:
+            format = "group"
+            ext = ".jpg"
+            media_id = event.message.photo.id
+        elif event.message.video:
+            format = "group"
+            ext = ".mp4"
+            media_id = event.message.video.id
+        else:
+            return  # Пропускаем, если медиа не является ни фото, ни видео
+        img_name = f"{media_id}{ext}"
+        img_path = os.path.join(SAVE_FOLDER, img_name)
+
+        # Скачиваем медиа-файл асинхронно и сохраняем на диск
+        await event.message.download_media(file=img_path)
+        create_databases(connection)
+        create_table(connection)
+        # Добавляем новую запись в MySQL с путем до картинки, названием и текстом
+        add_new_mem_group(connection, group_id, img_path, img_name, format, message_text)
+        print(f"Картинка сохранено: {img_path}")  # Стандартное термининальное оповищение.
+
     # Проверяем, есть ли у сообщения медиа в виде фото
-    if event.message.photo:
+    elif event.message.photo:
         # Даем уникальное имя для изображения на основании его ID в Telegram
         img_name = f"{event.message.photo.id}.jpg"
         format = 'jpg'
